@@ -15,4 +15,11 @@
             #{dishId}
         </foreach>
     </delete>
+    <delete id="deleteByDishId" parameterType="java.lang.Long">
+        delete  from  dish_flavor  where  dish_id = #{id}
+    </delete>
+
+    <select id="getByDishId" resultType="com.sky.entity.DishFlavor" parameterType="java.lang.Long">
+        select * from dish_flavor where  dish_id = #{id}
+    </select>
 </mapper>
