@@ -82,6 +82,14 @@ public class DishController {
     }
 
     // TODO 菜品停售和启售
+    @PostMapping("/status/{status}")
+    @ApiOperation("修改菜品状态")
+    public Result startOrStop(@PathVariable Integer status,Long id){
+        log.info("修改菜品状态：{},{}",status,id);
+        dishService.startOrStop(status,id);
+        cleanCache("dish_*");
+        return Result.success();
+    }
 
     private void cleanCache(String pattern) {
         Set keys = redisTemplate.keys(pattern);
