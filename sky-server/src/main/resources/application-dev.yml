@@ -6,11 +6,3 @@ sky:
     database: sky_take_out
     username: root
     password: cheng20011101
-  alioss:
-    endpoint: oss-cn-beijing.aliyuncs.com
-    access-key-id: LTAI5tRTHMiorS7fpTUH1Wfx
-    access-key-secret: 3dD1Hs6zdjvgt4vSwNT7iDkmvN0Hyq
-    bucket-name: j-sky-itcast
-  wechat:
-    appid: wxd361c61fcc3c1799
-    secret: 61ce6d90a324e969b8a8d111d33bacb7
