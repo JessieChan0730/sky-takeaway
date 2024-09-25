@@ -1,18 +1,23 @@
 package com.sky.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.ShoppingCartBusinessException;
 import com.sky.mapper.*;
+import com.sky.result.PageResult;
 import com.sky.service.OrderService;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,14 +43,14 @@ public class OrderServiceImpl implements OrderService {
     private UserMapper userMapper;
     @Autowired
     private WeChatPayUtil weChatPayUtil;
-    private  Orders orders;
+    private Orders orders;
 
     @Transactional
-    public OrderSubmitVO submitOrder(OrdersSubmitDTO orderSubmitDTO){
+    public OrderSubmitVO submitOrder(OrdersSubmitDTO orderSubmitDTO) {
         //1.处理各种业务异常（地址簿为空，购物车数据为空）
         //地址簿为空
         AddressBook addressBook = addressBookMapper.getById(orderSubmitDTO.getAddressBookId());
-        if(addressBook == null){
+        if (addressBook == null) {
             //抛出业务异常
             throw new AddressBookBusinessException(MessageConstant.ADDRESS_BOOK_IS_NULL);
         }
@@ -54,12 +59,12 @@ public class OrderServiceImpl implements OrderService {
         ShoppingCart shoppingCart = new ShoppingCart();
         shoppingCart.setUserId(userId);
         List<ShoppingCart> shoppingCartList = shoppingCartMapper.list(shoppingCart);
-        if(shoppingCartList == null || shoppingCartList.size()==0){
+        if (shoppingCartList == null || shoppingCartList.size() == 0) {
             throw new ShoppingCartBusinessException(MessageConstant.ADDRESS_BOOK_IS_NULL);
         }
         //2.向订单表插入1条数据
         Orders orders = new Orders();
-        BeanUtils.copyProperties(orderSubmitDTO,orders);
+        BeanUtils.copyProperties(orderSubmitDTO, orders);
         orders.setOrderTime(LocalDateTime.now());
         orders.setPayStatus(Orders.UN_PAID);
         orders.setStatus(Orders.PENDING_PAYMENT);
@@ -71,9 +76,9 @@ public class OrderServiceImpl implements OrderService {
         this.orders = orders;
         List<OrderDetail> orderDetailList = new ArrayList<>();
         //3.向订单明细表插入n条数据
-        for(ShoppingCart cart: shoppingCartList){
+        for (ShoppingCart cart : shoppingCartList) {
             OrderDetail orderDetail = new OrderDetail();//订单明细
-            BeanUtils.copyProperties(cart,orderDetail);
+            BeanUtils.copyProperties(cart, orderDetail);
             orderDetail.setOrderId(orders.getId());//设置当前订单明细关联的订单id
             orderDetailList.add(orderDetail);
         }
@@ -113,7 +118,7 @@ public class OrderServiceImpl implements OrderService {
 //        }
 
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("code","ORDERPAID");
+        jsonObject.put("code", "ORDERPAID");
         OrderPaymentVO vo = jsonObject.toJavaObject(OrderPaymentVO.class);
         vo.setPackageStr(jsonObject.getString("package"));
         Integer OrderPaidStatus = Orders.PAID;//支付状态，已支付
@@ -143,5 +148,26 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+    }
+
+    @Override
+    public PageResult pageQuery4User(int pageNum, int pageSize, Integer status) {
+        PageHelper.startPage(pageNum, pageSize);
+        OrdersPageQueryDTO ordersPageQueryDTO = new OrdersPageQueryDTO();
+        ordersPageQueryDTO.setUserId(BaseContext.getCurrentId());
+        ordersPageQueryDTO.setStatus(status);
+        Page<Orders> page = orderMapper.pageQuery(ordersPageQueryDTO);
+        List<OrderVO> list = new ArrayList();
+        if (page != null && page.getTotal() > 0){
+            for (Orders orders : page){
+                Long orderId = orders.getId();// 订单id
+                List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(orderId);
+                OrderVO orderVO = new OrderVO();
+                BeanUtils.copyProperties(orders, orderVO);
+                orderVO.setOrderDetailList(orderDetails);
+                list.add(orderVO);
+            }
+        }
+        return new PageResult(page.getTotal(), list);
     }
 }
