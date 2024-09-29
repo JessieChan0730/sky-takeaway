@@ -5,12 +5,12 @@
     <insert id="insert" parameterType="Orders" useGeneratedKeys="true" keyProperty="id">
         insert into orders
         (number, status, user_id, address_book_id, order_time, checkout_time, pay_method, pay_status,
-         amount, remark,phone, address, consignee, estimated_delivery_time, delivery_status,
-         pack_amount, tableware_number,tableware_status)
-        values
-            (#{number}, #{status}, #{userId}, #{addressBookId}, #{orderTime}, #{checkoutTime}, #{payMethod},#{payStatus},
-             #{amount}, #{remark}, #{phone},#{address}, #{consignee},#{estimatedDeliveryTime}, #{deliveryStatus},
-             #{packAmount}, #{tablewareNumber}, #{tablewareStatus})
+         amount, remark, phone, address, consignee, estimated_delivery_time, delivery_status,
+         pack_amount, tableware_number, tableware_status)
+        values (#{number}, #{status}, #{userId}, #{addressBookId}, #{orderTime}, #{checkoutTime}, #{payMethod},
+                #{payStatus},
+                #{amount}, #{remark}, #{phone}, #{address}, #{consignee}, #{estimatedDeliveryTime}, #{deliveryStatus},
+                #{packAmount}, #{tablewareNumber}, #{tablewareStatus})
     </insert>
     <update id="update" parameterType="com.sky.entity.Orders">
         update orders
@@ -65,6 +65,48 @@
             </if>
         </where>
         order by order_time desc
+    </select>
+    <select id="sumByMap" resultType="java.lang.Double">
+        select sum(amount) from orders
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt;= #{end}
+            </if>
+        </where>
+    </select>
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(id) from orders
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt;= #{end}
+            </if>
+        </where>
+    </select>
+    <select id="getSalesTop10" resultType="com.sky.dto.GoodsSalesDTO">
+        select od.name name,sum(od.number) number from order_detail od ,orders o
+        where od.order_id = o.id
+        and o.status = 5
+        <if test="beginTime != null">
+            and order_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null">
+            and order_time &lt;= #{endTime}
+        </if>
+        group by name
+        order by number desc
+        limit 0, 10
     </select>
 
 </mapper>
